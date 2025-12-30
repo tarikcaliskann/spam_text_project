@@ -1,13 +1,39 @@
 import gradio as gr
 import joblib
 
-from transforms import preprocess_text
+from src.transforms import preprocess_text
 
-# Model ve vectorizer yükle
+
+# ===============================
+# MODEL VE VECTORIZER YÜKLE
+# ===============================
 model = joblib.load("models/spam_model.joblib")
 vectorizer = joblib.load("models/tfidf_vectorizer.joblib")
 
 
+# ===============================
+# SUNUM İÇİN HAZIR ÖRNEKLER
+# ===============================
+EXAMPLES = [
+    # SPAM
+    ["Tebrikler! 10.000 TL hediye kazandınız. Hemen linke tıklayın.", True, True, False],
+    ["%50+%50 ODUL KAZANDIN!!", True, False, False],
+    ["Son gün! %50 indirim fırsatı için şimdi tıklayın. SMS iptal: 1234", True, True, False],
+    ["Ücretsiz hediye kazandınız. Bilgilerinizi almak için bağlantıya girin.", True, True, False],
+    ["DIGITURK'TEN FIRSAT! SADECE BUGUNE OZEL ARAYIN 0212XXXXXXX", True, True, False],
+
+    # NORMAL (HAM)
+    ["Akşam biraz geç geliyorum, sen yemeğe başla.", True, True, False],
+    ["Toplantı yarın saat 10’da, ona göre hazırlık yapalım.", True, True, False],
+    ["Bugün dersten sonra kütüphaneye geçiyorum.", True, True, False],
+    ["Tamam, haberleşiriz. İyi akşamlar.", True, True, False],
+    ["İyiyim teşekkürler 😊 Sen nasılsın?", True, True, False],
+]
+
+
+# ===============================
+# TAHMİN FONKSİYONU
+# ===============================
 def predict_spam(text, lowercase, remove_punc, remove_vowel):
     if text.strip() == "":
         return "Lütfen bir SMS metni giriniz."
@@ -33,12 +59,15 @@ Temizlenmiş Metin:
 """
 
 
+# ===============================
+# GRADIO ARAYÜZÜ
+# ===============================
 with gr.Blocks(title="Türkçe SMS Spam Sınıflandırması") as demo:
 
     gr.Markdown("""
-    # 📩 Türkçe SMS Spam Sınıflandırması  
-    Bu uygulama, **Türkçe SMS metinleri** üzerinde farklı **ön-işleme adımlarının**
-    spam sınıflandırma performansına etkisini göstermektedir.
+    # 📩 Türkçe SMS Spam Sınıflandırması
+    Bu uygulama, **Türkçe SMS mesajlarını** farklı ön-işleme adımlarından geçirerek
+    **Spam** veya **Normal** olarak sınıflandırır.
     """)
 
     with gr.Row():
@@ -80,11 +109,22 @@ with gr.Blocks(title="Türkçe SMS Spam Sınıflandırması") as demo:
         outputs=output
     )
 
+    # 🔥 SUNUM İÇİN HAZIR ÖRNEKLER
+    gr.Examples(
+        examples=EXAMPLES,
+        inputs=[sms_input, lowercase, remove_punc, remove_vowel],
+        label="📌 Hazır Örnekler (Sunum için tek tık)"
+    )
+
     gr.Markdown("""
     ---
     **Model:** TF-IDF + Logistic Regression  
-    **Amaç:** Ön-işleme adımlarının sınıflandırma başarımına etkisini incelemek
+    **Amaç:** Ön-işleme adımlarının spam sınıflandırmaya etkisini incelemek
     """)
 
+
+# ===============================
+# HUGGING FACE İÇİN LAUNCH
+# ===============================
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch()
